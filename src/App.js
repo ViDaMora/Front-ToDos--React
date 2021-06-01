@@ -35,6 +35,8 @@ const Form = ()=>{
       formRef.current.reset()
     })
   }
+
+  //Peticion para editar un to do 
   const onEdit = (event)=>{
     event.preventDefault();
     const request = {
@@ -58,12 +60,16 @@ const Form = ()=>{
   
   
   return <form ref={formRef}>
-  <input type="text" name="name" defaultValue={item.name} onChange={(event)=>{
+    <div className="form-group ">
+    <input type="text" name="name"  defaultValue={item.name} onChange={(event)=>{
     setState({...state,name:event.target.value})
   }} ></input>
-   {item.id &&<button onClick={onEdit}>Actualizar</button>}
-   {!item.id &&<button onClick={onAdd}>Agregar</button>}
+   {item.id &&<button type="button" className="btn btn-primary" onClick={onEdit}>Actualizar</button>}
+   {!item.id &&<button type="button" className="btn btn-info" onClick={onAdd}>Agregar</button>}
 
+
+    </div>
+  
   </form>
 }
 
@@ -80,6 +86,7 @@ const List = () => {
     })
   },[state.list.length,dispatch])
 
+  //Metodo delete para borrar un to do de la basede datos
   const onDelete = (id) =>{
     fetch(HOST_API+"/"+id+"/todo",
     {method:"DELETE",
@@ -94,27 +101,58 @@ const List = () => {
     dispatch({type:"edit-item", item:todo})
 }
 
+const onChangeComplete = (todo) =>{ 
+  
+    todo.isCompleted= !todo.isCompleted
+    const request = {
+      name: todo.name,
+      id: todo.id,
+      completed: true
+    }
+
+    fetch(HOST_API+"/todo",{
+      method:"PUT",
+      body:JSON.stringify(request),
+      headers:{
+        'Content-Type': 'application/json'
+      }
+    }).then(response => response.json()).then((todo)=>{
+      console.log(todo);
+      dispatch({type:"edit-item-completed", item:todo})
+    })
+ 
+}
+
   return <div>
-    <table>
+    <table className="table">
       <thead>
         <tr>
-          <td>ID</td>
-          <td>Nombre</td>
-          <td>¿Esta completado?</td>
+          <th scope="col">ID</th>
+          <th scope="col">Nombre</th>
+          <th scope="col">¿Esta completado?</th>
+          <th scope="col">Eliminar</th>
+          <th scope="col">Editar</th>
+          <th scope="col">Completar</th>
+
+
         </tr>
       </thead>
-    </table>
     <tbody>
       {state.list.map((todo)=>{
-        return <tr key={todo.id}>
-          <td>{todo.id}</td>
+        return <tr key={todo.id} >
+          
+          <td >{todo.id}</td>
           <td>{todo.name}</td>
           <td>{todo.isCompleted === true? "SI" : "NO"}</td>
-          <td><button onClick={()=> onDelete(todo.id)}>Eliminar</button></td>
-          <td><button onClick={()=> onEdit(todo)}>Editar</button></td>
+          <td><button type="button" className="btn btn-danger" onClick={()=> onDelete(todo.id)}>Eliminar</button></td>
+          <td><button  type="button" className="btn btn-success" onClick={()=> onEdit(todo)}>Editar</button></td>
+          <td><button type="button" className="btn btn-info" onClick={()=> onChangeComplete(todo)}>Completado</button></td>
+
         </tr>
       })}
     </tbody>
+    </table>
+
   </div>
 }
 
@@ -138,6 +176,7 @@ function reducer(state,action){
     case 'update-list':
       return {...state, list:action.list}
     case 'edit-item':
+    case 'edit-item-completed':
       return {...state,item:action.item}
     case 'add-item':
       const newList = state.list
